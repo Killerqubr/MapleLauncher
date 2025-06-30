@@ -1,34 +1,26 @@
-from PyQt5.QtWidgets import QPushButton
-from PyQt5.QtCore import Qt, QPropertyAnimation, QEasingCurve, pyqtProperty # type: ignore
+from PyQt5.QtWidgets import QPushButton, QSizePolicy
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor, QFont
 
 class MapleButton(QPushButton):
     """
-    ``Project Maple`` | 按钮类组件
-    - 版本 ``Beta 2.1.1``
+    带主题色的多功能按钮
+    Features:
+    - 可设置主题色边框/白底黑字
+    - 支持尺寸弹性控制
+    - 自动悬停/按压效果
+    - 圆角支持
     """
     
     def __init__(self, 
                  text: str = "",
-                 frameColor: str = "#4CAF50",
-                 backgroundColor: str = "#FFFFFF",
-                 min_width: int = None, # type: ignore
-                 max_width: int = None, # type: ignore
+                 theme_color: str = "#4CAF50",
+                 min_width: int = None, #type:ignore
+                 max_width: int = None, #type:ignore
                  fixed_height: int = 32,
                  font_size: int = 13,
-                 borderRadius = 10,
-                 parent = None):
+                 parent=None):
         super().__init__(text, parent)
-
-        self.borderRadius = borderRadius
-        
-        # 保存基础颜色
-        self._frame_color = frameColor
-        self._bg_color = backgroundColor
-        
-        # 初始化动画
-        self._opacity_animation = QPropertyAnimation(self, b"windowOpacity")
-        self._setup_animations()
         
         # 尺寸控制
         if min_width:
@@ -43,111 +35,47 @@ class MapleButton(QPushButton):
         font.setPointSize(font_size)
         self.setFont(font)
         
-        # 初始样式更新
-        self._update_style_sheet()
+        # 应用样式
+        self._update_style(theme_color)
     
-    def _setup_animations(self):
-        """配置透明度过渡动画"""
-        self._opacity_animation.setDuration(200)
-        self._opacity_animation.setEasingCurve(QEasingCurve.OutQuad)
-    
-    def _update_style_sheet(self):
-        """更新样式表定义所有状态"""
-        normal_bg = self._bg_color
-        normal_frame = self._frame_color
-        normal_text = "black" if QColor(normal_bg).lightness() > 127 else "white"
-        
-        hover_bg = QColor(self._bg_color).lighter(110).name()
-        hover_frame = QColor(self._frame_color).lighter(120).name()
-        hover_text = "black" if QColor(hover_bg).lightness() > 127 else "white"
-        
-        pressed_bg = QColor(self._bg_color).darker(110).name()
-        pressed_frame = QColor(self._frame_color).darker(150).name()
-        pressed_text = "black" if QColor(pressed_bg).lightness() > 127 else "white"
-        
-        # ?
-        normal_frame = "#665555"
-        normal_bg = "#FFFFFF"
+    def _update_style(self, theme_color: str):
+        """动态更新按钮样式"""
+        lighter = QColor(theme_color).lighter(115).name()
+        darker = QColor(theme_color).darker(115).name()
+        darkest = QColor(theme_color).darker(130).name()
         
         self.setStyleSheet(f"""
             QPushButton {{
-                border: 2px solid {normal_frame};
-                border-radius: {self.borderRadius}px;
+                background: white;
+                color: black;
+                border: 2px solid {theme_color};
+                border-radius: 10px;
                 padding: 0 12px;
-                background-color: {normal_bg};
-                color: {normal_text};
                 font-size: {self.font().pointSize()}pt;
+                {f'min-width: {self.minimumWidth()}px;' if self.minimumWidth() > 0 else ''}
+                {f'max-width: {self.maximumWidth()}px;' if self.maximumWidth() < 16777215 else ''}
             }}
             QPushButton:hover {{
-                border-color: {hover_frame};
-                background-color: {hover_bg};
-                color: {hover_text};
+                background: {lighter};
+                border-color: {lighter};
             }}
             QPushButton:pressed {{
-                border-color: {pressed_frame};
-                background-color: {pressed_bg};
-                color: {pressed_text};
+                background: #f0f0f0;
+                border-color: {darkest};
             }}
             QPushButton:disabled {{
+                background: #f0f0f0;
                 border-color: #cccccc;
-                background-color: #f0f0f0;
                 color: #999999;
             }}
         """)
     
-    # 鼠标事件处理
-    def enterEvent(self, event): # type: ignore
-        if not self.isEnabled():
-            return
-            
-        self._opacity_animation.stop()
-        self._opacity_animation.setStartValue(self.windowOpacity())
-        self._opacity_animation.setEndValue(0.9)
-        self._opacity_animation.start()
-        
-        super().enterEvent(event)
-        
-    def leaveEvent(self, event): # type: ignore
-        if not self.isEnabled():
-            return
-            
-        self._opacity_animation.stop()
-        self._opacity_animation.setStartValue(self.windowOpacity())
-        self._opacity_animation.setEndValue(1.0)
-        self._opacity_animation.start()
-        
-        super().leaveEvent(event)
-    
-    def mousePressEvent(self, event): # type: ignore
-        if not self.isEnabled() or event.button() != Qt.LeftButton: # type: ignore
-            return super().mousePressEvent(event)
-            
-        self._opacity_animation.stop()
-        self._opacity_animation.setStartValue(self.windowOpacity())
-        self._opacity_animation.setEndValue(0.8)
-        self._opacity_animation.start()
-        
-        super().mousePressEvent(event)
-    
-    def mouseReleaseEvent(self, event): # type: ignore
-        if not self.isEnabled() or event.button() != Qt.LeftButton or not self.rect().contains(event.pos()): # type: ignore
-            return super().mouseReleaseEvent(event)
-            
-        self._opacity_animation.stop()
-        self._opacity_animation.setStartValue(self.windowOpacity())
-        self._opacity_animation.setEndValue(0.9)
-        self._opacity_animation.start()
-        
-        super().mouseReleaseEvent(event)
-    
-    def setThemeColor(self, frameColor: str, backgroundColor: str = "#FFFFFF"):
+    def setThemeColor(self, color: str):
         """动态修改主题色"""
-        self._frame_color = frameColor
-        self._bg_color = backgroundColor
-        self._update_style_sheet()
+        self._update_style(color)
     
-    def setEnabled(self, enabled): # type: ignore
-        """重写setEnabled以触发状态更新"""
-        super().setEnabled(enabled)
-        self._opacity_animation.stop()
-        self.setWindowOpacity(1.0 if enabled else 0.7)
+    def setFixedSize(self, w: int, h: int): #type:ignore
+        """重写设置固定尺寸"""
+        super().setFixedSize(w, h)
+        self.setMinimumWidth(w)
+        self.setMaximumWidth(w)

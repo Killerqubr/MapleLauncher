@@ -2,10 +2,6 @@ from PyQt5.QtCore import QPropertyAnimation, QEasingCurve, QObject, pyqtSignal, 
 from PyQt5.QtWidgets import QWidget
 
 class AnimationManager(QObject):
-    """
-    ``Project Maple`` | 工具函数
-    - 版本 ``alpha 1.0``
-    """
     animation_triggered = pyqtSignal(str)
     
     def __init__(self):
